@@ -45,6 +45,13 @@ io.on('connection', socket => {
     socket.on("disconnect", socket => { 
         console.log("K bye then");
     });
+
+
+    socket.on('create-new-room', ({roomCode, message}) => {
+        console.log(`Sending '${message}' to ${roomCode}`);
+        socket.join(roomCode)
+        io.to(roomCode).emit('admin-message', {message})
+    })
 })
 
 
