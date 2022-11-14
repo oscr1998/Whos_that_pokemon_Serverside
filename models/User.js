@@ -2,9 +2,7 @@ const { init } = require("../dbConfig")
 const { ObjectId } = require("mongodb");
 
 class User {
-
   constructor(data) {
-    this._id = data._id;
     this.name = data.name;
     this.score = data.score;
   }

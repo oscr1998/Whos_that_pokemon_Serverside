@@ -12,14 +12,16 @@ app.use(cors())
 
 // const router = express.Router();
 app.get('/', (req, res) => res.send('Kakuna Matata')) 
-const usersRoute = require('./routes/users')
+const usersRoutes = require("./routes/usersRoutes")
 const pokemonRoute = require('./routes/pokemon')
-app.use('/users', usersRoute) 
+app.use("/users", usersRoutes);
 app.use('/pokemon', pokemonRoute) 
 
 const port = process.env.PORT || 5001;
 
 server.listen(port, () => console.log(`Express is running on port ${port}`))
+
+
 
 let count = 0;
 
