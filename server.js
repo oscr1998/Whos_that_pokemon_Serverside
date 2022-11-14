@@ -8,10 +8,14 @@ const io = require('socket.io')(server, {
 
 let cors = require('cors')
 app.use(cors())
+// server.use(express.json());
 
-// app.get('/', (req, res) => {
-//     res.send('Kakuna Matata')
-// }) 
+// const router = express.Router();
+app.get('/', (req, res) => res.send('Kakuna Matata')) 
+const usersRoute = require('./routes/users')
+const pokemonRoute = require('./routes/pokemon')
+app.use('/users', usersRoute) 
+app.use('/pokemon', pokemonRoute) 
 
 const port = process.env.PORT || 5001;
 
@@ -55,4 +59,4 @@ io.on('connection', socket => {
 })
 
 
-module.exports = server
+module.exports = {app, server}
