@@ -1,6 +1,6 @@
 async function index (req, res) {
     try {
-        const pokemonJSON = await fetch('https://pokeapi.co/api/v2/pokemon?limit=100')
+        const pokemonJSON = await fetch('https://pokeapi.co/api/v2/pokemon?limit=151')
         const pokemon = await pokemonJSON.json()
         const names = pokemon.results.map(poke => poke.name)
         res.status(200).json(names)

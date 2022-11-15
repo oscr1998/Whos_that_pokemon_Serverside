@@ -1,4 +1,5 @@
-const app = require("express")();
+const express = require("express");
+const app = express();
 const server = require("http").createServer(app);
 const io = require('socket.io')(server, {
     cors:{
@@ -8,7 +9,7 @@ const io = require('socket.io')(server, {
 
 let cors = require('cors')
 app.use(cors())
-// server.use(express.json());
+app.use(express.json());
 
 // const router = express.Router();
 app.get('/', (req, res) => res.send('Kakuna Matata')) 
