@@ -22,9 +22,18 @@ const port = process.env.PORT || 5001;
 
 server.listen(port, () => console.log(`Express is running on port ${port}`))
 
-
-
 let count = 0;
+
+const generateId = length => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    const charactersLength = characters.length
+  
+    let result = ''
+    for (let i = 0; i < length; i++)
+        result += characters.charAt(Math.floor(Math.random() * charactersLength))
+  
+    return result
+}
 
 io.on('connection', socket => {
     console.log("1:", socket.id)
@@ -44,9 +53,9 @@ io.on('connection', socket => {
     
     // !#########################################
     socket.emit('counter updated', count);
-    socket.on('counter clicked', () => {
-    count++;
-    io.emit('counter updated', count);
+        socket.on('counter clicked', () => {
+            count++;
+            io.emit('counter updated', count);
     });
 
     socket.on("disconnect", socket => { 
@@ -54,10 +63,46 @@ io.on('connection', socket => {
     });
 
 
-    socket.on('create-new-room', ({roomCode, message}) => {
-        console.log(`Sending '${message}' to ${roomCode}`);
-        socket.join(roomCode)
-        io.to(roomCode).emit('admin-message', {message})
+    socket.on('create-new-room', () => {
+        const rooms = io.sockets.adapter.rooms
+        let newRoomCode
+
+        do {
+            newRoomCode = generateId(6).toUpperCase()
+        } while (rooms.has(newRoomCode))
+
+        socket.join(newRoomCode)
+        socket.emit('created-room', { msg: `Created new room ${newRoomCode}` })
+
+        //io.to(code).emit('admin-message', {message})
+    })
+
+    socket.on('join-existing-room', ({code, user}) => {
+        console.log()
+    })
+
+    io.sockets.adapter.on('create-room', (room) => {
+        socket.emit('created-room', { msg: `created ${room}`, code: room })
+        console.log('created', room);
+        console.log('All rooms', io.sockets.adapter.rooms);
+    })
+
+    io.sockets.adapter.on('delete-room', (room) => {
+        socket.emit('admin-message', `deleted ${room}`)
+        console.log('deleted', room);
+        console.log('All rooms', io.sockets.adapter.rooms);
+    })
+
+    io.sockets.adapter.on('join-room', (room, id) => {
+        socket.emit('joined-room', { msg: `joined ${room}`, code: room})
+        console.log('joined', room);
+        console.log('All rooms', io.sockets.adapter.rooms);
+    })
+
+    io.sockets.adapter.on('leave-room', (room, id) => {
+        socket.emit('admin-message', `left ${room}`)
+        console.log('left', room);
+        console.log('All rooms', io.sockets.adapter.rooms);
     })
 })
 
