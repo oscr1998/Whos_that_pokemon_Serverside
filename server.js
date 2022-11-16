@@ -34,6 +34,7 @@ const generateId = length => {
 
 io.on('connection', socket => {
     const clientsCount = io.engine.clientsCount
+    const adapter = io.sockets.adapter
 
     // socket.emit('admin-message', 'Hi there, new friend!')
     // socket.broadcast.emit('admin-message', `A new friend has arrived!`)
@@ -45,25 +46,36 @@ io.on('connection', socket => {
         console.log(`Client left. ${clientsCount} clients remaining.`)
     })
 
-    socket.on('create-new-room', () => {
-        const rooms = io.sockets.adapter.rooms
+    socket.on('create-new-room', ({ name }) => {
+        const adapter = io.sockets.adapter
+        const rooms = adapter.rooms
         let newCode
+        
+        const user = adapter.sids.get(socket.id)
+        user.name = name
+        console.log('This is the user', name, user);
 
         do {
             newCode = generateId(5).toUpperCase()
         } while (rooms.has(newCode))
 
-        socket.emit('created-room', { msg: `Created new room ${newCode}` })
+        socket.emit('created-room', { msg: `${name} created new room ${newCode}` })
         socket.join(newCode)
     })
 
-    socket.on('join-existing-room', (code) => {
-        const rooms = io.sockets.adapter.rooms
+    socket.on('join-existing-room', ({code, name}) => {
+        const adapter = io.sockets.adapter
+        const rooms = adapter.rooms
+        console.log('All rooms', rooms, code);
+        
+        const user = adapter.sids.get(socket.id)
+        user.name = name
+        console.log('This is the user', name, user);
 
         if(rooms.has(code))
             socket.join(code)
         
-        // console.log('This room', rooms.get(code));
+        console.log('This room', rooms.get(code));
         // io.to(code).emit('admin-message', `${rooms[code].size} in this room`)
     })
 })
@@ -92,6 +104,7 @@ io.sockets.adapter.on('delete-room', (room) => {
 
 io.sockets.adapter.on('join-room', (room, id) => {
     const adapter = io.sockets.adapter
+    const user = adapter.sids.get(id)
 
     // Checks for default room
     if(id === room)
@@ -99,7 +112,7 @@ io.sockets.adapter.on('join-room', (room, id) => {
         
     console.log(`Client ${id} joined room ${room}`)
     console.log(adapter.rooms.get(room))
-    io.to(room).emit('joined-room', { msg: `joined ${room}`, code: room })
+    io.to(room).emit('joined-room', { msg: `joined ${room}`, code: room, user: {name: user.name} })
 })
 
 io.sockets.adapter.on('leave-room', (room, id) => {
