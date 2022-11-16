@@ -51,15 +51,27 @@ io.on('connection', socket => {
         console.log(`Client left. ${clientsCount} clients remaining.`)
     })
 
+    socket.on('startGame', () => { 
+        const adapter = io.sockets.adapter
+        const user = adapter.sids.get(socket.id)
+        const rooms = adapter.rooms
+        const room = rooms.get(user.room)
+        socket.emit('startGame')
+        socket.broadcast.emit('startGame')
+        console.log("room", room)
+        console.log("user", user)
+    })
+
     socket.on('update-score', ({score}) => {
         const adapter = io.sockets.adapter
         const user = adapter.sids.get(socket.id)
         user.score = score
         const rooms = adapter.rooms
         const room = rooms.get(user.room)
-
         io.to(room).emit('update-score', { user, score })
-        console.log(room, user, score)
+        console.log("room", room)
+        console.log("user", user)
+        console.log("score", score)
     })
 
     socket.on('create-new-room', ({ name }) => {
@@ -108,6 +120,8 @@ io.on('connection', socket => {
         // io.to(code).emit('admin-message', `${rooms[code].size} in this room`)
     })
 })
+
+
 
 io.sockets.adapter.on('create-room', (room) => {
     const adapter = io.sockets.adapter
