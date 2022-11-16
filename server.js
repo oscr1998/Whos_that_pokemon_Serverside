@@ -33,14 +33,6 @@ const generateId = length => {
     return result
 }
 
-class Data {
-    constructor(name = '', icon = '', score = 0){
-        this.name = name
-        this.icon = icon
-        this.score = score
-    }
-}
-
 io.on('connection', socket => {
     const clientsCount = io.engine.clientsCount
     const adapter = io.sockets.adapter
