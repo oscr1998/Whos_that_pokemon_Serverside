@@ -51,8 +51,17 @@ io.on('connection', socket => {
         console.log(`Client left. ${clientsCount} clients remaining.`)
     })
 
+    socket.on('chat-message', ({ room, message }) => {
+        const user = adapter.sids.get(socket.id)
+
+        if(room)
+            io.to(room).emit('admin-message', `${user.name}: ${message}`)
+        else
+            io.emit('admin-message', `${user.name}: ${message}`)
+    })
+
     socket.on('update-score', ({score}) => {
-        const adapter = io.sockets.adapter
+        // const adapter = io.sockets.adapter
         const user = adapter.sids.get(socket.id)
         user.score = score
         const rooms = adapter.rooms
@@ -63,7 +72,7 @@ io.on('connection', socket => {
     })
 
     socket.on('create-new-room', ({ name }) => {
-        const adapter = io.sockets.adapter
+        // const adapter = io.sockets.adapter
         const rooms = adapter.rooms
         let newCode
         
@@ -80,7 +89,7 @@ io.on('connection', socket => {
     })
 
     socket.on('join-existing-room', ({code, name}) => {
-        const adapter = io.sockets.adapter
+        // const adapter = io.sockets.adapter
         const rooms = adapter.rooms
         // console.log('All rooms', rooms, code);
         
@@ -117,6 +126,7 @@ io.sockets.adapter.on('create-room', (room) => {
         return
     
     console.log('Created new room', room)
+
     // console.log('comparison', socket.id);
     // console.log(':', room)
     // if(socket.id !== room)
@@ -132,17 +142,18 @@ io.sockets.adapter.on('delete-room', (room) => {
 })
 
 io.sockets.adapter.on('join-room', (room, id) => {
-    const adapter = io.sockets.adapter
-    const user = adapter.sids.get(id)
-    const others = [...adapter.rooms.get(room)].filter(other => other !== id)
-    const members = others.map(other => {
-        return adapter.sids.get(other)
-    })
-
     // Checks for default room
     if(id === room)
         return
+    
+    const adapter = io.sockets.adapter
+    const user = adapter.sids.get(id)
+    const others = [...adapter.rooms.get(room)].filter(other => other !== id)
+    const members = others.map(other => adapter.sids.get(other))
+
     user.room = room
+    
+    // console.log(adapter.rooms.get(room))
     console.log(`Client ${user.name} joined room ${room}`)
     console.log('Others', others)
     io.to(room).emit('joined-room', { msg: `joined ${room}`, code: room, user: {name: user.name}, others: members })
