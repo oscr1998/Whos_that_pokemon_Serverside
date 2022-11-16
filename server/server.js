@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require('cors')
 const app = express();
 const server = require("http").createServer(app);
 const io = require('socket.io')(server, {
@@ -7,7 +8,6 @@ const io = require('socket.io')(server, {
     }
 })
 
-let cors = require('cors')
 app.use(cors())
 app.use(express.json());
 
@@ -16,11 +16,11 @@ app.get('/', (req, res) => res.send('Kakuna Matata'))
 const usersRoutes = require("./routes/usersRoutes")
 const pokemonRoute = require('./routes/pokemon')
 app.use("/users", usersRoutes);
-app.use('/pokemon', pokemonRoute) 
+app.use("/pokemon", pokemonRoute) 
 
-const port = process.env.PORT || 5001;
+// const port = process.env.PORT || 5001;
 
-server.listen(port, () => console.log(`Express is running on port ${port}`))
+// server.listen(port, () => console.log(`Express is running on port ${port}`))
 
 
 
@@ -62,4 +62,4 @@ io.on('connection', socket => {
 })
 
 
-module.exports = {app, server}
+module.exports = app

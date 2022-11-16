@@ -1,5 +1,4 @@
-const { init } = require("../dbConfig")
-const { ObjectId } = require("mongodb");
+const { init } = require("../db/dbConfig")
 
 class User {
   constructor(data) {
