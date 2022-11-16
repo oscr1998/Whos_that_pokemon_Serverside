@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --detectOpenHandles --watchAll",
-    "dev": "nodemon index.js",
+    "dev": "nodemon server.js",
     "coverage": "jest --coverage"
   },
   "repository": {

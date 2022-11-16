@@ -18,8 +18,8 @@ app.get('/', (req, res) => res.send('Kakuna Matata'))
 app.use("/users", usersRoutes);
 app.use('/pokemon', pokemonRoute) 
 
-// const port = process.env.PORT || 5001;
-// server.listen(port, () => console.log(`Express is running on port ${port}`))
+const port = process.env.PORT || 5001;
+server.listen(port, () => console.log(`Express is running on port ${port}`))
 
 const generateId = length => {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -124,4 +124,4 @@ io.sockets.adapter.on('leave-room', (room, id) => {
     // console.log('All rooms', io.sockets.adapter.rooms);
 })
 
-module.exports = app
+module.exports = {app, server}
