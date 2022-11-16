@@ -71,8 +71,11 @@ io.on('connection', socket => {
 io.sockets.adapter.on('create-room', (room) => {
     const adapter = io.sockets.adapter
     
-    if(!adapter.sids.has(room))
-        console.log('Created new room', room)
+    // Checks for default room
+    if(adapter.sids.has(room))
+        return
+    
+    console.log('Created new room', room)
     // console.log('comparison', socket.id);
     // console.log(':', room)
     // if(socket.id !== room)
@@ -82,26 +85,28 @@ io.sockets.adapter.on('create-room', (room) => {
 })
 
 io.sockets.adapter.on('delete-room', (room) => {
-    // socket.emit('admin-message', `deleted ${room}`)
+    io.to(room).emit('admin-message', `deleted ${room}`)
     // console.log('deleted', room);
     // console.log('All rooms', io.sockets.adapter.rooms);
 })
 
 io.sockets.adapter.on('join-room', (room, id) => {
-    if(id !== room)
-        console.log(`Client ${id} joined room ${room}`)
-        // socket.emit('joined-room', { msg: `joined ${room}`, code: room})
+    const adapter = io.sockets.adapter
 
-    // if(socket.id !== room){
-        // console.log('Client joined', room);
-        // console.log(io.sockets.adapter.rooms.get(room));
-    // }
+    // Checks for default room
+    if(id === room)
+        return
+        
+    console.log(`Client ${id} joined room ${room}`)
+    console.log(adapter.rooms.get(room))
+    io.to(room).emit('joined-room', { msg: `joined ${room}`, code: room })
 })
 
 io.sockets.adapter.on('leave-room', (room, id) => {
-    // socket.emit('admin-message', `left ${room}`)
-    // const rooms = io.sockets.adapter.rooms
-    // console.log('left', room);
+    const adapter = io.sockets.adapter
+
+    io.to(room).emit('admin-message', `Client left ${room}`)
+    console.log(adapter.rooms.get(room));
     // console.log('This room', rooms.get(room));
     // console.log('All rooms', io.sockets.adapter.rooms);
 })
