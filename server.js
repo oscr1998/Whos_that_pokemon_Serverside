@@ -40,6 +40,7 @@ io.on('connection', socket => {
     // io.emit('admin-message', `${participantCount} users online.`)
 
     const user = adapter.sids.get(socket.id)
+    user.room = ''
     user.name = ''
     user.icon = ''
     user.score = 0
@@ -48,6 +49,17 @@ io.on('connection', socket => {
 
     socket.on('disconnect', socket => { 
         console.log(`Client left. ${clientsCount} clients remaining.`)
+    })
+
+    socket.on('update-score', ({score}) => {
+        const adapter = io.sockets.adapter
+        const user = adapter.sids.get(socket.id)
+        user.score = score
+        const rooms = adapter.rooms
+        const room = rooms.get(user.room)
+
+        io.to(room).emit('update-score', { user, score })
+        console.log(room, user, score)
     })
 
     socket.on('create-new-room', ({ name }) => {
@@ -130,7 +142,7 @@ io.sockets.adapter.on('join-room', (room, id) => {
     // Checks for default room
     if(id === room)
         return
-        
+    user.room = room
     console.log(`Client ${user.name} joined room ${room}`)
     console.log('Others', others)
     io.to(room).emit('joined-room', { msg: `joined ${room}`, code: room, user: {name: user.name}, others: members })
