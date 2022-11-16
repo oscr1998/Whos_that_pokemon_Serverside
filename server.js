@@ -13,7 +13,8 @@ app.use(express.json());
 
 // const router = express.Router();
 const usersRoutes = require("./routes/usersRoutes")
-const pokemonRoute = require('./routes/pokemon')
+const pokemonRoute = require('./routes/pokemon');
+const User = require("./models/User");
 app.get('/', (req, res) => res.send('Kakuna Matata')) 
 app.use("/users", usersRoutes);
 app.use('/pokemon', pokemonRoute) 
@@ -32,13 +33,24 @@ const generateId = length => {
     return result
 }
 
+class Data {
+    constructor(name = '', icon = '', score = 0){
+        this.name = name
+        this.icon = icon
+        this.score = score
+    }
+}
+
 io.on('connection', socket => {
     const clientsCount = io.engine.clientsCount
     const adapter = io.sockets.adapter
 
-    // socket.emit('admin-message', 'Hi there, new friend!')
-    // socket.broadcast.emit('admin-message', `A new friend has arrived!`)
-    // io.emit('admin-message', `There is ${participantCount} x friend here now!`)
+    // io.emit('admin-message', `${participantCount} users online.`)
+
+    const user = adapter.sids.get(socket.id)
+    user.name = ''
+    user.icon = ''
+    user.score = 0
 
     console.log(`Client ${socket.id} joined. ${clientsCount} client${clientsCount > 1 ? 's' : ''} total.`)
 
@@ -53,7 +65,7 @@ io.on('connection', socket => {
         
         const user = adapter.sids.get(socket.id)
         user.name = name
-        console.log('This is the user', name, user);
+        console.log('This is the host', user);
 
         do {
             newCode = generateId(5).toUpperCase()
@@ -66,16 +78,29 @@ io.on('connection', socket => {
     socket.on('join-existing-room', ({code, name}) => {
         const adapter = io.sockets.adapter
         const rooms = adapter.rooms
-        console.log('All rooms', rooms, code);
+        // console.log('All rooms', rooms, code);
         
         const user = adapter.sids.get(socket.id)
         user.name = name
         console.log('This is the user', name, user);
 
-        if(rooms.has(code))
-            socket.join(code)
-        
-        console.log('This room', rooms.get(code));
+        if(!rooms.has(code)){
+            socket.emit('admin-message', 'Invalid room code')
+            return
+        }
+
+        const room = rooms.get(code)
+
+        console.log("Room has name check", room.keys())
+        socket.emit('admin-message', {msg: `${[...room.keys()]}`})
+
+        if(room.has(name)){
+            socket.emit('admin-message', 'Name already taken')
+            return
+        }
+
+        socket.join(code)
+        console.log('This room', room);
         // io.to(code).emit('admin-message', `${rooms[code].size} in this room`)
     })
 })
@@ -105,21 +130,25 @@ io.sockets.adapter.on('delete-room', (room) => {
 io.sockets.adapter.on('join-room', (room, id) => {
     const adapter = io.sockets.adapter
     const user = adapter.sids.get(id)
+    const others = [...adapter.rooms.get(room)].filter(other => other !== id)
+    const members = others.map(other => {
+        return adapter.sids.get(other)
+    })
 
     // Checks for default room
     if(id === room)
         return
         
-    console.log(`Client ${id} joined room ${room}`)
-    console.log(adapter.rooms.get(room))
-    io.to(room).emit('joined-room', { msg: `joined ${room}`, code: room, user: {name: user.name} })
+    console.log(`Client ${user.name} joined room ${room}`)
+    console.log('Others', others)
+    io.to(room).emit('joined-room', { msg: `joined ${room}`, code: room, user: {name: user.name}, others: members })
 })
 
 io.sockets.adapter.on('leave-room', (room, id) => {
     const adapter = io.sockets.adapter
 
     io.to(room).emit('admin-message', `Client left ${room}`)
-    console.log(adapter.rooms.get(room));
+    // console.log("Left room", adapter.rooms.get(room));
     // console.log('This room', rooms.get(room));
     // console.log('All rooms', io.sockets.adapter.rooms);
 })
