@@ -68,6 +68,7 @@ io.on('connection', socket => {
 
     socket.on('start-game', (room) => {
         io.to(room).emit('started-game')
+        console.log('Game started')
 
         // socket.emit('startGame')
         // socket.broadcast.emit('startGame')
@@ -84,20 +85,22 @@ io.on('connection', socket => {
         console.log(`${room} = ROOM`)
     })
 
-    socket.on('update-score', ({ score, room }) => {
+
+    socket.on('update-score', ({ room, score }) => {
         // const user = getUser(socket.id)
         // const room = getRoom(user.room)
 
-        socket.data.score = score
+        socket.data.score += score
 
-        socket.to(room).emit('updated-score', { user: socket.data, score })
+        io.to(room).emit('updated-score', { user: {...socket.data, score: socket.data.score }})
 
-        console.log("UPDATE SCORE", socket.data.name, score)
+        console.log("UPDATE SCORE", `${socket.data.name} scored ${score} [${socket.data.score} total]`)
     })
 
     socket.on('create-new-room', ({ name, icon }) => {
         socket.data.name = name
         socket.data.icon = icon
+        socket.data.isHost = true
 
         let newCode
         do {
@@ -188,7 +191,6 @@ io.sockets.adapter.on('join-room', (room, id) => {
 
     socket.data.room = room
     socket.data.index = users.length
-    socket.data.isHost = users.length < 1
 
     // console.log('User data', user)
     console.log(`Client ${socket.data.index} ${socket.data.name} joined room ${room}`)
