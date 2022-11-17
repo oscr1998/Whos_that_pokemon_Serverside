@@ -43,10 +43,12 @@ io.on('connection', socket => {
 
     // io.emit('admin-message', `${participantCount} users online.`)
 
-    socket.data.room = ''
     socket.data.name = ''
     socket.data.icon = ''
+    socket.data.room = ''
+    socket.data.isHost = false
     socket.data.score = 0
+    socket.data.index = 0
 
     console.log(`Client ${socket.id} joined. ${clientsCount} client${clientsCount > 1 ? 's' : ''} total.`)
 
@@ -59,13 +61,13 @@ io.on('connection', socket => {
         console.log('ROOM, MSG, USER', room, message, socket.data)
 
         if(room)
-            io.to(room).emit('admin-message', `${user.name}: ${message}`)
+            io.to(room).emit('new-message', {user, msg: message})
         else
-            io.emit('admin-message', `${user.name}: ${message}`)
+            io.emit('new-message', {user, msg: message})
     })
 
-    socket.on('start-game', ({ room }) => {
-        io.to(room).emit('starting-game')
+    socket.on('start-game', (room) => {
+        io.to(room).emit('started-game')
 
         // socket.emit('startGame')
         // socket.broadcast.emit('startGame')
@@ -73,17 +75,15 @@ io.on('connection', socket => {
         // console.log("user", user)
     })
 
-    socket.on('update-score', ({ score }) => {
-        const user = getUser(socket.id)
-        const room = getRoom(user.room)
+    socket.on('update-score', ({ score, room }) => {
+        // const user = getUser(socket.id)
+        // const room = getRoom(user.room)
 
         socket.data.score = score
 
-        io.to(room).emit('update-score', { user, score })
+        socket.to(room).emit('updated-score', { user: socket.data, score })
 
-        console.log("room", room)
-        console.log("user", user)
-        console.log("score", score)
+        console.log("UPDATE SCORE", socket.data.name, score)
     })
 
     socket.on('create-new-room', ({ name }) => {
@@ -99,32 +99,37 @@ io.on('connection', socket => {
         socket.join(newCode)
     })
 
-    socket.on('join-existing-room', ({code, name}) => {
+    socket.on('join-existing-room', ({ room, name }) => {
         // const adapter = io.sockets.adapter
-        const rooms = adapter.rooms
         // console.log('All rooms', rooms, code);
         
-        const user = getUser(socket.id)
+        // const user = getUser(socket.id)
         // user.name = name
-        console.log('This is the user', name, user);
+        // console.log('This is the user', name, user);
 
-        if(!rooms.has(code)){
+        if(!adapter.rooms.has(room)){
             socket.emit('admin-message', 'Invalid room code')
             return
         }
 
-        const room = rooms.get(code)
+        socket.data.name = name
+        socket.data.room = room
+        socket.join(room)
 
-        console.log("Room has name check", room.keys())
-        socket.emit('admin-message', {msg: `${[...room.keys()]}`})
+        console.log(`${name} joined ${room}`)
+        socket.to(room).emit('user-joined', { user: socket.data })
 
-        if(room.has(name)){
-            socket.emit('admin-message', 'Name already taken')
-            return
-        }
+        // const room = rooms.get(code)
 
-        socket.join(code)
-        console.log('This room', room);
+        // console.log("Room has name check", room.keys())
+        // socket.emit('admin-message', {msg: `${[...room.keys()]}`})
+
+        // if(room.has(name)){
+        //     socket.emit('admin-message', 'Name already taken')
+        //     return
+        // }
+
+        // console.log('This room', room);
         // io.to(code).emit('admin-message', `${rooms[code].size} in this room`)
     })
 
@@ -166,15 +171,19 @@ io.sockets.adapter.on('join-room', (room, id) => {
         return
     
     const socket = getSocket(id)
-    const others = [...getRoom(room)].filter(other => other !== id)
-    const members = others.map(other => adapter.sids.get(other))
+    const users = [...getRoom(room)].map(user => getSocket(user).data)
+    // const others = [...getRoom(room)].filter(other => other !== id)
+    // const members = others.map(other => adapter.sids.get(other))
 
     socket.data.room = room
-    // console.log('User data', user)
-    console.log(`Client ${socket.data.name} joined room ${room}`)
-    console.log('Others', others)
+    socket.data.index = users.length
+    socket.data.isHost = users.length < 1
 
-    io.to(room).emit('joined-room', { msg: `joined ${room}`, code: room, user: socket.data, others: members })
+    // console.log('User data', user)
+    console.log(`Client ${socket.data.index} ${socket.data.name} joined room ${room}`)
+    console.log('All users', users)
+
+    io.to(room).emit('joined-room', { msg: `joined ${room}`, code: room, user: socket.data, users })
 })
 
 io.sockets.adapter.on('leave-room', (room, id) => {
