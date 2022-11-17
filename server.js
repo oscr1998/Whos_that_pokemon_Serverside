@@ -86,8 +86,9 @@ io.on('connection', socket => {
         console.log("UPDATE SCORE", socket.data.name, score)
     })
 
-    socket.on('create-new-room', ({ name }) => {
+    socket.on('create-new-room', ({ name, icon }) => {
         socket.data.name = name
+        socket.data.icon = icon
 
         let newCode
         do {
@@ -99,7 +100,7 @@ io.on('connection', socket => {
         socket.join(newCode)
     })
 
-    socket.on('join-existing-room', ({ room, name }) => {
+    socket.on('join-existing-room', ({ room, name, icon }) => {
         // const adapter = io.sockets.adapter
         // console.log('All rooms', rooms, code);
         
@@ -114,6 +115,7 @@ io.on('connection', socket => {
 
         socket.data.name = name
         socket.data.room = room
+        socket.data.icon = icon
         socket.join(room)
 
         console.log(`${name} joined ${room}`)
