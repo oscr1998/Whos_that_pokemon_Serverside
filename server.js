@@ -33,17 +33,20 @@ const generateId = length => {
     return result
 }
 
+const adapter = io.sockets.adapter
+const getRoom = roomId => adapter.rooms.get(roomId)
+const getUser = userId => adapter.sids.get(userId)
+const getSocket = sid => io.sockets.sockets.get(sid)
+
 io.on('connection', socket => {
     const clientsCount = io.engine.clientsCount
-    const adapter = io.sockets.adapter
 
     // io.emit('admin-message', `${participantCount} users online.`)
 
-    const user = adapter.sids.get(socket.id)
-    user.room = ''
-    user.name = ''
-    user.icon = ''
-    user.score = 0
+    socket.data.room = ''
+    socket.data.name = ''
+    socket.data.icon = ''
+    socket.data.score = 0
 
     console.log(`Client ${socket.id} joined. ${clientsCount} client${clientsCount > 1 ? 's' : ''} total.`)
 
@@ -52,7 +55,8 @@ io.on('connection', socket => {
     })
 
     socket.on('chat-message', ({ room, message }) => {
-        const user = adapter.sids.get(socket.id)
+        const user = getUser(socket.id)
+        console.log('ROOM, MSG, USER', room, message, socket.data)
 
         if(room)
             io.to(room).emit('admin-message', `${user.name}: ${message}`)
@@ -69,31 +73,28 @@ io.on('connection', socket => {
         // console.log("user", user)
     })
 
-    socket.on('update-score', ({score}) => {
-        // const adapter = io.sockets.adapter
-        const user = adapter.sids.get(socket.id)
-        user.score = score
-        const rooms = adapter.rooms
-        const room = rooms.get(user.room)
+    socket.on('update-score', ({ score }) => {
+        const user = getUser(socket.id)
+        const room = getRoom(user.room)
+
+        socket.data.score = score
+
         io.to(room).emit('update-score', { user, score })
+
         console.log("room", room)
         console.log("user", user)
         console.log("score", score)
     })
 
     socket.on('create-new-room', ({ name }) => {
-        // const adapter = io.sockets.adapter
-        const rooms = adapter.rooms
-        let newCode
-        
-        const user = adapter.sids.get(socket.id)
-        user.name = name
-        console.log('This is the host', user);
+        socket.data.name = name
 
+        let newCode
         do {
             newCode = generateId(5).toUpperCase()
-        } while (rooms.has(newCode))
+        } while (adapter.rooms.has(newCode))
 
+        console.log(`${socket.data.name} created room ${newCode}`)
         socket.emit('created-room', { msg: `${name} created new room ${newCode}` })
         socket.join(newCode)
     })
@@ -103,8 +104,8 @@ io.on('connection', socket => {
         const rooms = adapter.rooms
         // console.log('All rooms', rooms, code);
         
-        const user = adapter.sids.get(socket.id)
-        user.name = name
+        const user = getUser(socket.id)
+        // user.name = name
         console.log('This is the user', name, user);
 
         if(!rooms.has(code)){
@@ -126,13 +127,19 @@ io.on('connection', socket => {
         console.log('This room', room);
         // io.to(code).emit('admin-message', `${rooms[code].size} in this room`)
     })
+
+    socket.on('leave-current-room', (code) => {
+        console.log('LEAVE ROOM', socket.id, code);
+
+        socket.data.room = ''
+        socket.data.score = 0
+        socket.leave(code)
+    })
 })
 
 
 
 io.sockets.adapter.on('create-room', (room) => {
-    const adapter = io.sockets.adapter
-    
     // Checks for default room
     if(adapter.sids.has(room))
         return
@@ -158,23 +165,23 @@ io.sockets.adapter.on('join-room', (room, id) => {
     if(id === room)
         return
     
-    const adapter = io.sockets.adapter
-    const user = adapter.sids.get(id)
-    const others = [...adapter.rooms.get(room)].filter(other => other !== id)
+    const socket = getSocket(id)
+    const others = [...getRoom(room)].filter(other => other !== id)
     const members = others.map(other => adapter.sids.get(other))
 
-    user.room = room
-    
-    // console.log(adapter.rooms.get(room))
-    console.log(`Client ${user.name} joined room ${room}`)
+    socket.data.room = room
+    // console.log('User data', user)
+    console.log(`Client ${socket.data.name} joined room ${room}`)
     console.log('Others', others)
-    io.to(room).emit('joined-room', { msg: `joined ${room}`, code: room, user: {name: user.name}, others: members })
+
+    io.to(room).emit('joined-room', { msg: `joined ${room}`, code: room, user: socket.data, others: members })
 })
 
 io.sockets.adapter.on('leave-room', (room, id) => {
-    const adapter = io.sockets.adapter
+    const socket = getSocket(id)
 
-    io.to(room).emit('admin-message', `Client left ${room}`)
+    console.log(`${socket.data.name} left ${room}`)
+    io.to(room).emit('admin-message', `${socket.data.name} left ${room}`)
     // console.log("Left room", adapter.rooms.get(room));
     // console.log('This room', rooms.get(room));
     // console.log('All rooms', io.sockets.adapter.rooms);
