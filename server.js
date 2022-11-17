@@ -57,13 +57,12 @@ io.on('connection', socket => {
     })
 
     socket.on('chat-message', ({ room, message }) => {
-        const user = getUser(socket.id)
-        console.log('ROOM, MSG, USER', room, message, socket.data)
+        // console.log('ROOM, MSG, USER', room, message, socket.data)
 
         if(room)
-            io.to(room).emit('new-message', {user, msg: message})
+            io.to(room).emit('new-message', {user: socket.data, msg: message})
         else
-            io.emit('new-message', {user, msg: message})
+            io.emit('new-message', {user: socket.data, msg: message})
     })
 
     socket.on('start-game', (room) => {
