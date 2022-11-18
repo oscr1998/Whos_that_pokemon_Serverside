@@ -76,21 +76,15 @@ io.on('connection', socket => {
     })
 
     socket.on('set-generation', ({gen, room}) => {
-        const adapter = io.sockets.adapter
-        const user = adapter.sids.get(socket.id)
-        const rooms = adapter.rooms
         io.to(room).emit('setting-generation', { gen })
-        console.log("############## RECIEVED", gen)
-        console.log(`${room} = ROOM`)
+    })
+
+    socket.on('set-num-rounds', ({numRounds, room}) => {
+        io.to(room).emit('setting-num-rounds', { numRounds })
     })
 
     socket.on('pokemon-select', ({num, room}) => {
-        const adapter = io.sockets.adapter
-        const user = adapter.sids.get(socket.id)
-        const rooms = adapter.rooms
         io.to(room).emit('setting-pokemon', { num })
-        console.log("@@@ RECIEVED", num)
-        console.log(`${room} = ROOM`)
     })
 
 
